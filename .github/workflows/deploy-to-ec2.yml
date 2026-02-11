@@ -28,6 +28,8 @@ jobs:
       # Build JAR with Gradle
       - name: Build with Gradle
         run: ./gradlew build -x test
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
 
       # Login to Docker Hub
       - name: Login to Docker Hub
@@ -53,10 +55,13 @@ jobs:
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
             docker pull ${{ secrets.DOCKER_USERNAME }}/myapp:latest
             docker stop myapp || true
             docker rm myapp || true
-            docker run -d --name myapp -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/myapp:latest
+            docker run -d --name myapp \
+              -p 8080:8080 \
+              -e STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }} \
+              ${{ secrets.DOCKER_USERNAME }}/myapp:latest
